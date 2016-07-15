@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Toggle POC</title>
+	<meta name="viewport" content="target-densitydpi=device-dpi, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+	<meta http-equiv="x-ua-compatible" content="IE=edge" />
+	<style>
+		@-ms-viewport { width: device-width; }
+		@media only screen and (min-device-width: 800px) { html { overflow:hidden; } }
+		html { height:100%; }
+		body { height:100%; overflow:hidden; margin:0; padding:0; font-family:Arial, Helvetica, sans-serif; font-size:16px; color:#FFFFFF; background-color:#000000; }
+
+		.playBtn
+		{
+			position: absolute;
+			width: 80px;
+			height: 80px;
+			left: 0px;
+			bottom: 0px;
+			-webkit-user-select: none;
+			-webkit-tap-highlight-color:rgba(0,0,0,0);
+			/*background-color: blue;*/
+			background-image: url('skin/videointerface_playpause.png');
+			background-size: 80px;
+			background-position: 0px 80px;
+		}
+		.toggleBtnAnimation{
+			-webkit-animation: pulsate 1s ease-out;
+		 -webkit-animation-iteration-count: infinite;
+		}
+		.toggleBtn
+		{
+			position: absolute;
+			width: 80px;
+			height: 80px;
+			right: 0px;
+			bottom: 0px;
+			-webkit-user-select: none;
+			cursor: pointer;
+			-webkit-tap-highlight-color:rgba(0,0,0,0);
+			text-align:center;
+			vertical-align: middle;
+			background-image: url('images/toggleInterface_coffeeLogo.png');
+			background-size: 90px;
+		}
+		.pauseBtn{
+			position: absolute;
+			width: 80px;
+			height: 80px;
+			left: 0px;
+			bottom: 0px;
+			-webkit-user-select: none;
+			-webkit-tap-highlight-color:rgba(0,0,0,0);
+			/*background-color: teal;*/
+			display: none;
+			background-image: url('skin/videointerface_playpause.png');
+			background-size: 80px;
+			background-position: 0px 0px;
+		}
+		.main{
+			position: relative;
+			width: 100%;
+			height: 100%;
+			background-color: black;
+		}
+
+		.webGlCanvasPlayer{
+			border: solid 1px black;
+			position: absolute;
+		  top: 50%;
+		  left: 50%;
+			transform: translate(-50%, -50%);
+			-webkit-transform: translate(-50%, -50%);
+			z-index: 1;
+		}
+		.stageCanvasPlayer{
+			/*border: solid 1px red;*/
+			position: absolute;
+		  top: 50%;
+		  left: 50%;
+			transform: translate(-50%, -50%);
+			-webkit-transform: translate(-50%, -50%);
+			z-index: 2;
+		}
+
+		.notransition {
+	  -webkit-transition: none !important;
+	  -moz-transition: none !important;
+	  -o-transition: none !important;
+	  -ms-transition: none !important;
+	  transition: none !important;
+	}
+
+		@-webkit-keyframes pulsate {
+	    0% {opacity: 0.3;}
+	    50% {opacity: 1.0;}
+	    100% {opacity: 0.3;}
+		}
+	</style>
+</head>
+<body>
+	<div id="errorLog" style="color:white;background-color:black;position:absolute;left:0px;top:0px;z-index:999"></div>
+	<div class="main">
+		<video id="toggleVideo" src="original-raw-v1.mp4" style="display:none;" autostart="0"></video>
+		<canvas class="webGlCanvasPlayer" id="webGlCanvas" width="1280" height="480" style="display:none;"></canvas>
+		<canvas class="stageCanvasPlayer" id="stageCanvas" width="640" height="480"></canvas>
+	</div>
+	<a href="javascript:;" id="playButton" class="playBtn"></a>
+	<a href="javascript:;"  id="pauseButton" class="pauseBtn"></a>
+
+	<div id="toggleButton" class="toggleBtn" onmouseup="toggleVideoNow(false)" onmousedown="toggleVideoNow(true)" ></div>
+
+	<script>
+	var videoToggle = false;
+
+	var toggleButton = document.getElementById('toggleButton');
+
+
+	toggleButton.addEventListener("touchstart", function(event){
+		toggleVideoNow(true);
+	}, false);
+
+	toggleButton.addEventListener("touchstart", function(event){
+		toggleVideoNow(true);
+	}, false);
+
+	toggleButton.addEventListener("touchend", function(event){
+		toggleVideoNow(false);
+	}, false);
+
+	function toggleVideoNow(showFlag)
+	{
+		if (showFlag) {
+			videoToggle = true;
+			if (showIntialShot==false) {
+				toggleButton.classList.remove('toggleBtnAnimation');
+			}
+		}
+		else {
+			videoToggle = false;
+			if (showIntialShot==false) {
+				toggleButton.classList.add('toggleBtnAnimation');
+			}
+		}
+
+	}
+	var playButton = document.getElementById('playButton');
+	var pauseButton = document.getElementById('pauseButton');
+
+	playButton.addEventListener('click',function(event){
+		playButton.style.display = 'none';
+		pauseButton.style.display = 'block';
+
+		video.play();
+	},false);
+
+	pauseButton.addEventListener('click',function(event){
+		playButton.style.display = 'block';
+		pauseButton.style.display = 'none';
+		video.pause();
+
+	},false);
+
+	function togglePlayPause(event){
+
+	}
+	var toggleApp = {};
+
+	toggleApp.log = function (message) {
+		document.getElementById('errorLog').innerHTML = message;
+	};
+
+	//Getting Canvas Reference
+	var webGlCanvas = document.getElementById('webGlCanvas');
+	var stageCanvas = document.getElementById('stageCanvas');
+	var stageCanvasContext = stageCanvas.getContext('2d');
+
+	var gl = null;
+	for (var i=0; i<4; i++)
+	{
+		//Using preserveDrawingBuffer option we can capture the current frame
+		gl = webGlCanvas.getContext(["webgl","experimental-webgl","moz-webgl","webkit-3d"][i],{preserveDrawingBuffer: true})
+		if (gl)
+			break;
+	}
+
+	if (!gl)
+		toggleApp.log("No WebGL support!");
+
+		// prepare WebGL
+		gl.enable(gl.BLEND);
+		gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+		var vs = gl.createShader(gl.VERTEX_SHADER);
+		gl.shaderSource(vs, "attribute vec2 vx;varying vec2 tx;void main(){gl_Position=vec4(vx.x*2.0-1.0,1.0-vx.y*2.0,0,1);tx=vx;}");
+		gl.compileShader(vs);
+
+		var ps = gl.createShader(gl.FRAGMENT_SHADER);
+		gl.shaderSource(ps, "precision mediump float;uniform sampler2D sm;varying vec2 tx;void main(){gl_FragColor=texture2D(sm,tx);}");
+		gl.compileShader(ps);
+
+		var shader  = gl.createProgram();
+		gl.attachShader(shader, vs);
+		gl.attachShader(shader, ps);
+		gl.linkProgram(shader);
+		gl.useProgram(shader);
+
+		var vx_ptr = gl.getAttribLocation(shader, "vx");
+		gl.enableVertexAttribArray(vx_ptr);
+		gl.uniform1i(gl.getUniformLocation(shader, "sm"), 0);
+
+		var vx = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, vx);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0,0, 1,0, 1,1, 0,1]), gl.STATIC_DRAW);
+
+		var ix = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ix);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array([0,1,2, 0,2,3]), gl.STATIC_DRAW);
+
+		var tex = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, tex);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T,     gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S,     gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+
+
+
+		// load the video
+		var video = document.getElementById("toggleVideo");
+		var videoready = false;
+		video.autoplay = false;
+		video.loop = false;
+
+		var videoWidth ;
+		var videoHeight ;
+		var videoWidthHalf;
+
+
+		var videoRatio;
+
+		var canvasWidth = stageCanvas.width;
+		var canvasHeight = stageCanvas.height;
+		var canvasRatio = canvasWidth / canvasHeight;
+
+		var videoScaleWidth = 0;
+		var videoScaleHeight = 0;
+		var videoXPos = 0;
+		var videoYPos = 0;
+
+		var showIntialShot = true;
+
+		video.oncanplay = function(){
+			videoready=true;
+			videoWidth = video.videoWidth;
+			videoHeight = video.videoHeight;
+			videoRatio = videoWidth / videoHeight;
+			videoWidthHalf = videoWidth/2;
+
+			if (canvasRatio > videoRatio) {
+				//(wi * hs/hi, hs)
+				videoScaleWidth = videoWidth * (canvasHeight / videoHeight);
+				videoScaleHeight = canvasHeight;
+			}
+			else {
+				// (ws, hi * ws/wi)
+				videoScaleWidth = canvasWidth;
+				videoScaleHeight = videoHeight * (canvasWidth / videoWidth);
+			}
+
+				// top = (hs - hnew)/2
+				// left = (ws - wnew)/2
+				videoYPos = (canvasHeight - videoScaleHeight)/2;
+				videoXPos = (canvasWidth - videoScaleWidth)/2;
+		}
+
+		video.addEventListener('timeupdate', function(){
+			// if(video.currentTime>6 && video.currentTime<7)
+			// console.log(video.currentTime);
+
+			if (video.currentTime<=7.1) {
+				showIntialShot = true;
+			}
+			else {
+				toggleButton.classList.add('toggleBtnAnimation');
+				showIntialShot = false;
+			}
+		}, false);
+
+
+		video.onerror = function()
+		{
+			var err = "unknown error";
+
+			switch(video.error.code)
+			{
+				case 1: err = "video loading aborted"; break;
+				case 2: err = "network loading error"; break;
+				case 3: err = "video decoding failed / corrupted data or unsupported codec"; break;
+				case 4: err = "video not supported"; break;
+			};
+
+			toggleApp.log("Error: " + err);
+		};
+
+		// try to disable the iPhone video fullscreen mode:
+		video.setAttribute("playsinline", "");
+		video.setAttribute("webkit-playsinline", "");
+
+		// requestAnimationFrame loop
+		function frameloop()
+		{
+			//ClearStage
+			stageCanvasContext.clearRect(0,0,canvasWidth,canvasHeight);
+
+			if (showIntialShot) {
+					stageCanvasContext.drawImage(webGlCanvas,0,0,videoWidth,videoHeight,videoXPos,videoYPos,videoScaleWidth,videoScaleHeight);
+			}
+			else {
+					if (videoToggle) {
+						//Show Girl's POV
+						stageCanvasContext.drawImage(webGlCanvas,0,0,videoWidthHalf,videoHeight,0,0,canvasWidth,canvasHeight);
+					}
+					else {
+						//Show Boy's POV
+						stageCanvasContext.drawImage(webGlCanvas,videoWidthHalf,0,videoWidthHalf,videoHeight,0,0,canvasWidth,canvasHeight);
+					}
+			}
+
+
+			gl.clear(gl.COLOR_BUFFER_BIT);
+
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, tex);
+
+			if (videoready)
+			{
+				try
+				{
+					// upload the video frame
+ 						// Initialize the texture to black first
+					  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA,video.videoWidth, video.videoHeight, 0,gl.RGBA, gl.UNSIGNED_BYTE, null);
+						gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, video);
+
+
+				}
+				catch(e)
+				{
+					// log only the first few errors
+					errcnt++;
+					if (errcnt < 10)
+						toggleApp.log(e);
+					else if (errcnt == 10)
+						toggleApp.log("...");
+				}
+			}
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, vx);
+			gl.vertexAttribPointer(vx_ptr, 2, gl.FLOAT, false, 0, 0);
+
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ix);
+			gl.drawElements(gl.TRIANGLES, 6, gl.UNSIGNED_SHORT, 0);
+
+			window.requestAnimationFrame(frameloop);
+		}
+
+		frameloop();
+	</script>
+</body>
+</html>

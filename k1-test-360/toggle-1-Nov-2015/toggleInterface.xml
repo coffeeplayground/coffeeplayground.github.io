@@ -1,0 +1,14 @@
+<krpano>
+  <style name="toggleInterface_coffeeLogo" url="images/toggleInterface_coffeeLogo.png" />
+<layer name="coffeeLogo" zorder="2"
+        crop="0|0|263|262" onovercrop="0|-263|263|262" ondowncrop="0|-544|263|262"
+       style="toggleInterface_coffeeLogo"
+       align="rightbottom"  visible="true" alpha="1.0" scale="0.25"
+       ondown="toggleVideo();"
+       onup = "toggleVideo();"
+       />
+<action name="toggleVideo">
+trace("toggle video tapped");
+js(toggleVideoPOV());
+</action>
+</krpano>
